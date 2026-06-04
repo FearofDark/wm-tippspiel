@@ -192,14 +192,8 @@ away_crest: match.awayTeam?.crest ?? null,
           points += 30;
         }
 
-        if (
-          specialResult.top_scorer &&
-          normalizeText(sp.top_scorer) ===
-            normalizeText(specialResult.top_scorer)
-        ) {
-          points += 50;
-        }
-
+        points += Number(sp.manual_bonus_points ?? 0);
+        
         if (
           specialResult.most_unfair_team &&
           sp.most_unfair_team === specialResult.most_unfair_team

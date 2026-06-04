@@ -154,17 +154,6 @@ export default function MatchesPage() {
           </button>
 
           <button
-            onClick={() => setTab("tips")}
-            className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
-              tab === "tips"
-                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            Tipps
-          </button>
-
-          <button
             onClick={() => setTab("special")}
             className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
               tab === "special"
@@ -174,6 +163,19 @@ export default function MatchesPage() {
           >
             Spezial
           </button>
+
+                    <button
+            onClick={() => setTab("tips")}
+            className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
+              tab === "tips"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                : "bg-slate-800 text-slate-300"
+            }`}
+          >
+            Tipps(alle)
+          </button>
+
+          
         </div>
 
         <div className="text-sm sm:text-base">

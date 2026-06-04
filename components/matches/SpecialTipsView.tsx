@@ -89,7 +89,7 @@ export default function SpecialTipsView({ matches }: Props) {
       <h2 className="text-2xl font-black">Spezial Tipps</h2>
 
       <div>
-        <p className="text-sm text-slate-400 mb-2">Weltmeister</p>
+        <p className="text-sm text-slate-400 mb-2">Weltmeister (30 Punkte)</p>
         <select
           value={worldChampion}
           onChange={(e) => setWorldChampion(e.target.value)}
@@ -105,7 +105,7 @@ export default function SpecialTipsView({ matches }: Props) {
       </div>
 
       <div>
-        <p className="text-sm text-slate-400 mb-2">Torschützenkönig</p>
+        <p className="text-sm text-slate-400 mb-2">Torschützenkönig (50 Punkte)</p>
         <input
           value={topScorer}
           onChange={(e) => setTopScorer(e.target.value)}
@@ -115,7 +115,7 @@ export default function SpecialTipsView({ matches }: Props) {
       </div>
 
       <div>
-        <p className="text-sm text-slate-400 mb-2">Unfairstes Team</p>
+        <p className="text-sm text-slate-400 mb-2">Unfairstes Team (20 Punkte)</p>
         <select
           value={mostUnfairTeam}
           onChange={(e) => setMostUnfairTeam(e.target.value)}
@@ -131,7 +131,7 @@ export default function SpecialTipsView({ matches }: Props) {
       </div>
 
       <div>
-        <p className="text-sm text-slate-400 mb-2">Fairstes Team</p>
+        <p className="text-sm text-slate-400 mb-2">Fairstes Team (20 Punkte)</p>
         <select
           value={fairestTeam}
           onChange={(e) => setFairestTeam(e.target.value)}
