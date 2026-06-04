@@ -110,83 +110,101 @@ export default function MatchesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white text-sm">
         ⚽ Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-7xl mx-auto p-4 sm:p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold">
+    <div className="min-h-screen bg-slate-950 text-white pb-24 md:pb-0">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-6">
+        <div className="mb-5 sm:mb-7">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black">
             FIFA World Cup 2026
           </h1>
         </div>
 
-        <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6">
           <button
             onClick={() => setTab("groups")}
-            className={`shrink-0 px-5 py-3 rounded-xl ${
-              tab === "groups" ? "bg-emerald-600" : "bg-slate-800"
+            className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
+              tab === "groups"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                : "bg-slate-800 text-slate-300"
             }`}
           >
-            Gruppenphase
+            Gruppen
           </button>
 
           <button
             onClick={() => setTab("ko")}
-            className={`shrink-0 px-5 py-3 rounded-xl ${
-              tab === "ko" ? "bg-emerald-600" : "bg-slate-800"
+            className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
+              tab === "ko"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                : "bg-slate-800 text-slate-300"
             }`}
           >
-            KO Phase
+            KO
           </button>
 
           <button
             onClick={() => setTab("tips")}
-            className={`shrink-0 px-5 py-3 rounded-xl ${
-              tab === "tips" ? "bg-emerald-600" : "bg-slate-800"
+            className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
+              tab === "tips"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                : "bg-slate-800 text-slate-300"
             }`}
           >
-            Alle Tipps
+            Tipps (alle)
           </button>
 
           <button
             onClick={() => setTab("special")}
-            className={`shrink-0 px-5 py-3 rounded-xl ${
-              tab === "special" ? "bg-emerald-600" : "bg-slate-800"
+            className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
+              tab === "special"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                : "bg-slate-800 text-slate-300"
             }`}
           >
-            Spezial Tipps
+            Spezial
           </button>
         </div>
 
-        {tab === "groups" && (
-          <GroupOverview
-            groups={groups}
-            currentGroup={currentGroup}
-            selectedGroup={selectedGroup}
-            setSelectedGroup={setSelectedGroup}
-            matches={matches}
-            predictions={predictions}
-            updatePrediction={updatePrediction}
-          />
-        )}
+        <div className="text-sm sm:text-base">
+          {tab === "groups" && (
+            <GroupOverview
+              groups={groups}
+              currentGroup={currentGroup}
+              selectedGroup={selectedGroup}
+              setSelectedGroup={setSelectedGroup}
+              matches={matches}
+              predictions={predictions}
+              updatePrediction={updatePrediction}
+            />
+          )}
 
-        {tab === "ko" && <KnockoutView matches={matches} />}
+          {tab === "ko" && (
+            <KnockoutView
+  matches={matches}
+  predictions={predictions}
+  updatePrediction={updatePrediction}
+/>
+          )}
 
-        {tab === "tips" && (
-          <AllPredictionsView
-            predictions={allPredictions}
-            specialPredictions={specialPredictions}
-            matches={matches}
-            profiles={profiles}
-          />
-        )}
+          {tab === "tips" && (
+            <AllPredictionsView
+              predictions={allPredictions}
+              specialPredictions={specialPredictions}
+              matches={matches}
+              profiles={profiles}
+            />
+          )}
 
-        {tab === "special" && <SpecialTipsView matches={matches} />}
+          {tab === "special" && (
+            <SpecialTipsView matches={matches} />
+          )}
+        </div>
       </div>
     </div>
   );

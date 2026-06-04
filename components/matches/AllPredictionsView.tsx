@@ -48,7 +48,7 @@ export default function AllPredictionsView({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
         <p className="text-sm text-slate-400 mb-2">Spieler auswählen</p>
 
@@ -110,12 +110,12 @@ export default function AllPredictionsView({
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
         {groups.map((group: any) => (
           <button
             key={group}
             onClick={() => setSelectedGroup(group)}
-            className={`shrink-0 w-12 h-12 rounded-xl font-bold ${
+            className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-bold ${
               selectedGroup === group
                 ? "bg-emerald-600 text-white"
                 : "bg-slate-800 text-slate-300"

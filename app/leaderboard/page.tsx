@@ -49,10 +49,7 @@ export default function Leaderboard() {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-4xl font-bold">🏆 Leaderboard</h1>
-        <p className="text-slate-400">
-          WM 2026 Tippspiel Rangliste
-        </p>
+        <h1 className="text-4xl font-bold"> Leaderboard</h1>
       </div>
 
       {/* PODIUM */}
