@@ -125,9 +125,6 @@ export default function MatchesPage() {
     <div className="min-h-screen bg-slate-950 text-white pb-24 md:pb-0">
       <div className="max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-6">
         <div className="mb-5 sm:mb-7">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black">
-            FIFA World Cup 2026
-          </h1>
         </div>
 
         <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6">

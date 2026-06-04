@@ -177,13 +177,6 @@ export default function Dashboard() {
               WM 2026 Tippspiel
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
-              Dashboard
-            </h1>
-
-            <p className="text-slate-400 mt-2 text-sm sm:text-base">
-              Punkte, Platzierung und deine offenen Tipps.
-            </p>
           </div>
 
           <button
@@ -219,13 +212,9 @@ export default function Dashboard() {
 
               <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl font-black text-orange-300">
-                  Du hast noch {totalOpenTips} offene Tipps
+                  Du hast noch {totalOpenTips} offene Tipps !
                 </h2>
 
-                <p className="text-sm text-orange-100/70 mt-1">
-                  Vergiss nicht, deine Tipps vor dem jeweiligen Anpfiff
-                  einzutragen.
-                </p>
               </div>
             </div>
           </div>
