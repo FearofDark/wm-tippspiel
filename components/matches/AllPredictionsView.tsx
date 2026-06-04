@@ -16,7 +16,9 @@ export default function AllPredictionsView({
   profiles,
 }: Props) {
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [section, setSection] = useState<"groups" | "ko">("groups");
   const [selectedGroup, setSelectedGroup] = useState<string>("GROUP_A");
+  const [selectedStage, setSelectedStage] = useState<string>("LAST_32");
 
   useEffect(() => {
     if (!selectedUser && profiles.length > 0) {
@@ -28,6 +30,28 @@ export default function AllPredictionsView({
     const found = matches.map((m) => m.group).filter(Boolean);
     return Array.from(new Set(found)).sort();
   }, [matches]);
+
+  const stages = useMemo(() => {
+    const allowed = [
+      "LAST_32",
+      "LAST_16",
+      "QUARTER_FINALS",
+      "SEMI_FINALS",
+      "FINAL",
+    ];
+
+    const found = matches
+      .map((m) => m.stage)
+      .filter((stage) => allowed.includes(stage));
+
+    return Array.from(new Set(found));
+  }, [matches]);
+
+  useEffect(() => {
+    if (stages.length > 0 && !stages.includes(selectedStage)) {
+      setSelectedStage(stages[0]);
+    }
+  }, [stages, selectedStage]);
 
   const filteredPredictions = predictions.filter(
     (p) => p.user_id === selectedUser
@@ -42,10 +66,34 @@ export default function AllPredictionsView({
 
   const selectedProfile = profiles.find((p) => p.id === selectedUser);
 
-  const groupPredictions = filteredPredictions.filter((prediction) => {
+  const visiblePredictions = filteredPredictions.filter((prediction) => {
     const match = getMatch(prediction.match_id);
-    return match?.group === selectedGroup;
+
+    if (!match) return false;
+
+    if (section === "groups") {
+      return match.group === selectedGroup;
+    }
+
+    return match.stage === selectedStage;
   });
+
+  const stageLabel = (stage: string) => {
+    switch (stage) {
+      case "LAST_32":
+        return "32";
+      case "LAST_16":
+        return "16";
+      case "QUARTER_FINALS":
+        return "VF";
+      case "SEMI_FINALS":
+        return "HF";
+      case "FINAL":
+        return "Finale";
+      default:
+        return stage;
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -110,29 +158,73 @@ export default function AllPredictionsView({
         )}
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
-        {groups.map((group: any) => (
-          <button
-            key={group}
-            onClick={() => setSelectedGroup(group)}
-            className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-bold ${
-              selectedGroup === group
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-800 text-slate-300"
-            }`}
-          >
-            {group.replace("GROUP_", "")}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setSection("groups")}
+          className={`rounded-xl py-2.5 text-sm font-black ${
+            section === "groups"
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-800 text-slate-300"
+          }`}
+        >
+          Gruppen
+        </button>
+
+        <button
+          onClick={() => setSection("ko")}
+          className={`rounded-xl py-2.5 text-sm font-black ${
+            section === "ko"
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-800 text-slate-300"
+          }`}
+        >
+          KO
+        </button>
       </div>
 
+      {section === "groups" && (
+        <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+          {groups.map((group: any) => (
+            <button
+              key={group}
+              onClick={() => setSelectedGroup(group)}
+              className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-bold ${
+                selectedGroup === group
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-800 text-slate-300"
+              }`}
+            >
+              {group.replace("GROUP_", "")}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {section === "ko" && (
+        <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+          {stages.map((stage: any) => (
+            <button
+              key={stage}
+              onClick={() => setSelectedStage(stage)}
+              className={`shrink-0 px-3 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-bold ${
+                selectedStage === stage
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-800 text-slate-300"
+              }`}
+            >
+              {stageLabel(stage)}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-3">
-        {groupPredictions.length === 0 ? (
+        {visiblePredictions.length === 0 ? (
           <div className="text-slate-400 text-sm">
-            Keine normalen Tipps für diese Auswahl gefunden.
+            Keine Tipps für diese Auswahl gefunden.
           </div>
         ) : (
-          groupPredictions.map((prediction) => {
+          visiblePredictions.map((prediction) => {
             const match = getMatch(prediction.match_id);
 
             const homeName =
