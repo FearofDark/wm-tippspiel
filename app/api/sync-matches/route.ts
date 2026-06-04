@@ -24,7 +24,10 @@ export async function GET() {
 
   if (!data?.matches) {
     return Response.json(
-      { error: "No matches found from API", apiResponse: data },
+      {
+        error: "No matches found from API",
+        apiResponse: data,
+      },
       { status: 500 }
     );
   }
@@ -32,6 +35,8 @@ export async function GET() {
   const formattedMatches = data.matches.map((match: any) => ({
     id: match.id,
     utc_date: match.utcDate,
+    group: match.group ?? null,
+    stage: match.stage ?? null,
     home_team: match.homeTeam?.name ?? null,
     away_team: match.awayTeam?.name ?? null,
     home_score: match.score?.fullTime?.home ?? null,
@@ -46,32 +51,54 @@ export async function GET() {
     });
 
   if (upsertError) {
-    return Response.json({ error: upsertError.message }, { status: 500 });
+    return Response.json(
+      {
+        step: "upsert matches",
+        error: upsertError.message,
+      },
+      { status: 500 }
+    );
+  }
+
+  const { data: dbMatches, error: matchesError } = await supabase
+    .from("matches")
+    .select("id, home_score, away_score, status")
+    .order("utc_date", { ascending: true });
+
+  if (matchesError) {
+    return Response.json(
+      {
+        step: "load matches from db",
+        error: matchesError.message,
+      },
+      { status: 500 }
+    );
+  }
+
+  const matchMap = new Map<number, any>();
+
+  for (const match of dbMatches ?? []) {
+    matchMap.set(Number(match.id), match);
   }
 
   const { data: predictions, error: predictionError } = await supabase
     .from("predictions")
-    .select(`
-      user_id,
-      pred_home,
-      pred_away,
-      matches (
-        home_score,
-        away_score,
-        status
-      )
-    `);
+    .select("user_id, match_id, pred_home, pred_away");
 
   if (predictionError) {
-    return Response.json({ error: predictionError.message }, { status: 500 });
+    return Response.json(
+      {
+        step: "load predictions",
+        error: predictionError.message,
+      },
+      { status: 500 }
+    );
   }
 
   const matchPointsByUser: Record<string, number> = {};
 
   for (const prediction of predictions ?? []) {
-    const match = Array.isArray(prediction.matches)
-      ? prediction.matches[0]
-      : prediction.matches;
+    const match = matchMap.get(Number(prediction.match_id));
 
     if (!match || match.status !== "FINISHED") continue;
     if (match.home_score === null || match.away_score === null) continue;
@@ -105,7 +132,10 @@ export async function GET() {
 
   if (specialResultError) {
     return Response.json(
-      { error: specialResultError.message },
+      {
+        step: "load special result",
+        error: specialResultError.message,
+      },
       { status: 500 }
     );
   }
@@ -115,7 +145,10 @@ export async function GET() {
 
   if (specialPredictionsError) {
     return Response.json(
-      { error: specialPredictionsError.message },
+      {
+        step: "load special predictions",
+        error: specialPredictionsError.message,
+      },
       { status: 500 }
     );
   }
@@ -163,7 +196,13 @@ export async function GET() {
     .select("id");
 
   if (profilesError) {
-    return Response.json({ error: profilesError.message }, { status: 500 });
+    return Response.json(
+      {
+        step: "load profiles",
+        error: profilesError.message,
+      },
+      { status: 500 }
+    );
   }
 
   const totalPointsByUser: Record<string, number> = {};
@@ -181,26 +220,23 @@ export async function GET() {
       .eq("id", profile.id);
 
     if (updateError) {
-      return Response.json({ error: updateError.message }, { status: 500 });
+      return Response.json(
+        {
+          step: "update profile points",
+          profileId: profile.id,
+          error: updateError.message,
+        },
+        { status: 500 }
+      );
     }
-  }
-
-  const { data: matches, error } = await supabase
-    .from("matches")
-    .select("*")
-    .order("utc_date", { ascending: true });
-
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
   }
 
   return Response.json({
     success: true,
-    total: matches.length,
+    matchesUpdated: formattedMatches.length,
     usersUpdated: allProfiles?.length ?? 0,
     matchPointsByUser,
     specialPointsByUser,
     totalPointsByUser,
-    matches,
   });
 }
