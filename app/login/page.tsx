@@ -20,7 +20,7 @@ export default function LoginPage() {
       console.log("LOGIN SESSION:", session);
 
       if (session) {
-        router.push("/matches");
+        router.push("/dashboard");
       }
     };
 
@@ -71,7 +71,7 @@ export default function LoginPage() {
 
       console.log("✅ LOGIN SUCCESS");
 
-      router.replace("/matches");
+      router.replace("/dashboard");
     } catch (err) {
       console.error("LOGIN ERROR:", err);
       alert("Login fehlgeschlagen");

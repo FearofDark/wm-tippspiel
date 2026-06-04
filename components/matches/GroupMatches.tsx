@@ -5,21 +5,13 @@ import { useRef, useState } from "react";
 type Props = {
   matches: any[];
   selectedGroup: string;
-  predictions: Record<
-    number,
-    {
-      home: string;
-      away: string;
-    }
-  >;
+  predictions: Record<number, { home: string; away: string }>;
   updatePrediction: (
     matchId: number,
     side: "home" | "away",
     value: string
   ) => void;
-  savePrediction: (
-    matchId: number
-  ) => Promise<void>;
+  savePrediction: (matchId: number) => Promise<void>;
 };
 
 export default function GroupMatches({
@@ -29,54 +21,56 @@ export default function GroupMatches({
   updatePrediction,
   savePrediction,
 }: Props) {
-  const [saved, setSaved] = useState<
-    Record<number, boolean>
-  >({});
-
-  const saveTimers = useRef<
-    Record<number, NodeJS.Timeout>
-  >({});
+  const [saved, setSaved] = useState<Record<number, boolean>>({});
+  const saveTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
   const groupMatches = matches.filter(
     (match: any) =>
       match.group === selectedGroup ||
-      match.group?.toUpperCase() ===
-        selectedGroup?.toUpperCase()
+      match.group?.toUpperCase() === selectedGroup?.toUpperCase()
   );
+
+  const runSave = async (matchId: number) => {
+    const pred = predictions?.[matchId];
+
+    if (!pred) return;
+
+    if (pred.home === "" || pred.away === "") {
+      console.log("⏳ Noch nicht vollständig:", pred);
+      return;
+    }
+
+    await savePrediction(matchId);
+
+    setSaved((prev) => ({
+      ...prev,
+      [matchId]: true,
+    }));
+
+    setTimeout(() => {
+      setSaved((prev) => ({
+        ...prev,
+        [matchId]: false,
+      }));
+    }, 1500);
+  };
 
   const handleChange = (
     matchId: number,
     side: "home" | "away",
     value: string
   ) => {
-    updatePrediction(
-      matchId,
-      side,
-      value
-    );
+    const cleanValue = value.replace(/\D/g, "");
+
+    updatePrediction(matchId, side, cleanValue);
 
     if (saveTimers.current[matchId]) {
-      clearTimeout(
-        saveTimers.current[matchId]
-      );
+      clearTimeout(saveTimers.current[matchId]);
     }
 
-    saveTimers.current[matchId] =
-      setTimeout(async () => {
-        await savePrediction(matchId);
-
-        setSaved((prev) => ({
-          ...prev,
-          [matchId]: true,
-        }));
-
-        setTimeout(() => {
-          setSaved((prev) => ({
-            ...prev,
-            [matchId]: false,
-          }));
-        }, 1500);
-      }, 1000);
+    saveTimers.current[matchId] = setTimeout(() => {
+      runSave(matchId);
+    }, 700);
   };
 
   if (!groupMatches.length) {
@@ -90,108 +84,79 @@ export default function GroupMatches({
   return (
     <div className="space-y-2">
       {groupMatches.map((match: any) => {
-        const pred =
-          predictions?.[match.id] || {};
+        const pred = predictions?.[match.id] || {
+          home: "",
+          away: "",
+        };
+
+        const matchDate = match.utc_date || match.utcDate;
+        const homeName = match.home_team || match.homeTeam?.name || "Offen";
+        const awayName = match.away_team || match.awayTeam?.name || "Offen";
+        const homeCrest = match.home_crest || match.homeTeam?.crest;
+        const awayCrest = match.away_crest || match.awayTeam?.crest;
 
         return (
           <div
             key={match.id}
-            className="
-              bg-slate-900
-              border
-              border-slate-800
-              rounded-xl
-              p-3
-            "
+            className="bg-slate-900 border border-slate-800 rounded-xl p-3"
           >
-            {/* DATUM */}
             <div className="text-center text-xs text-slate-500 mb-2">
-              {new Date(
-                match.utcDate
-              ).toLocaleString("de-DE")}
+              {matchDate
+                ? new Date(matchDate).toLocaleString("de-DE")
+                : "Datum offen"}
             </div>
 
-            {/* MATCH */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-1 sm:gap-2 min-w-0">
+                {homeCrest && (
+                  <img
+                    src={homeCrest}
+                    alt=""
+                    className="w-5 h-5 object-contain"
+                  />
+                )}
 
-              {/* HOME */}
-              <div className="flex items-center gap-2 w-40 justify-end">
-                <img
-                  src={match.homeTeam?.crest}
-                  alt=""
-                  className="w-5 h-5 object-contain"
-                />
-
-                <span className="text-sm">
-                  {match.homeTeam?.name}
+                <span className="text-xs sm:text-sm text-center sm:text-right break-words">
+                  {homeName}
                 </span>
               </div>
 
-              {/* HOME INPUT */}
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                value={pred.home || ""}
+                value={pred.home ?? ""}
                 onChange={(e) =>
-                  handleChange(
-                    match.id,
-                    "home",
-                    e.target.value
-                  )
+                  handleChange(match.id, "home", e.target.value)
                 }
-                className="
-                  w-10
-                  h-8
-                  text-center
-                  text-sm
-                  bg-slate-800
-                  border
-                  border-slate-700
-                  rounded
-                  [appearance:textfield]
-                "
+                onBlur={() => runSave(match.id)}
+                className="w-10 h-8 text-center text-sm bg-slate-800 border border-slate-700 rounded"
               />
 
-              <span className="font-bold">
-                :
-              </span>
+              <span className="font-bold">:</span>
 
-              {/* AWAY INPUT */}
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                value={pred.away || ""}
+                value={pred.away ?? ""}
                 onChange={(e) =>
-                  handleChange(
-                    match.id,
-                    "away",
-                    e.target.value
-                  )
+                  handleChange(match.id, "away", e.target.value)
                 }
-                className="
-                  w-10
-                  h-8
-                  text-center
-                  text-sm
-                  bg-slate-800
-                  border
-                  border-slate-700
-                  rounded
-                  [appearance:textfield]
-                "
+                onBlur={() => runSave(match.id)}
+                className="w-10 h-8 text-center text-sm bg-slate-800 border border-slate-700 rounded"
               />
 
-              {/* AWAY */}
-              <div className="flex items-center gap-2 w-40">
-                <span className="text-sm">
-                  {match.awayTeam?.name}
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 min-w-0">
+                <span className="text-xs sm:text-sm text-center sm:text-left break-words">
+                  {awayName}
                 </span>
 
-                <img
-                  src={match.awayTeam?.crest}
-                  alt=""
-                  className="w-5 h-5 object-contain"
-                />
+                {awayCrest && (
+                  <img
+                    src={awayCrest}
+                    alt=""
+                    className="w-5 h-5 object-contain"
+                  />
+                )}
               </div>
             </div>
 

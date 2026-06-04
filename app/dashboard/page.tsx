@@ -17,22 +17,24 @@ function getCountdown(targetDate: string) {
   return `${days}d ${hours}h ${minutes}m`;
 }
 
+function formatRank(rank: number | null) {
+  if (!rank) return "-";
+  return `${rank}.`;
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-
   const [points, setPoints] = useState(0);
   const [rank, setRank] = useState<number | null>(null);
-
   const [nextMatch, setNextMatch] = useState<any>(null);
   const [countdown, setCountdown] = useState("");
 
-  // LIVE COUNTDOWN UPDATE
   useEffect(() => {
     const interval = setInterval(() => {
       if (nextMatch?.utcDate) {
         setCountdown(getCountdown(nextMatch.utcDate));
       }
-    }, 60000); // jede Minute reicht (ruhiger)
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [nextMatch]);
@@ -49,7 +51,6 @@ export default function Dashboard() {
           return;
         }
 
-        // POINTS
         const { data: profile } = await supabase
           .from("profiles")
           .select("points")
@@ -58,7 +59,6 @@ export default function Dashboard() {
 
         setPoints(profile?.points || 0);
 
-        // RANK
         const { data: allUsers } = await supabase
           .from("profiles")
           .select("id, points")
@@ -68,10 +68,9 @@ export default function Dashboard() {
           const position =
             allUsers.findIndex((u) => u.id === user.id) + 1;
 
-          setRank(position);
+          setRank(position > 0 ? position : null);
         }
 
-        // MATCHES
         const res = await fetch("/api/matches");
         const data = await res.json();
 
@@ -88,7 +87,6 @@ export default function Dashboard() {
 
         if (future.length > 0) {
           const next = future[0];
-
           setNextMatch(next);
           setCountdown(getCountdown(next.utcDate));
         }
@@ -107,80 +105,125 @@ export default function Dashboard() {
     window.location.href = "/login";
   };
 
-  return (
-    <div className="p-6 space-y-6 text-white">
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-slate-400">Dashboard lädt...</div>
+      </div>
+    );
+  }
+
+return (
+  <div className="min-h-screen bg-slate-950 text-white">
+    <div className="mx-auto max-w-6xl px-3 py-4 sm:p-6 space-y-5">
 
       {/* HEADER */}
-      <div className="flex justify-between">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-4xl font-bold">WM 2026 Dashboard</h1>
-          <p className="text-slate-400">
-            Tippspiel Übersicht
+          <div className="inline-flex items-center rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-300 mb-3">
+            WM 2026 Tippspiel
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
+            Dashboard
+          </h1>
+
+          <p className="text-slate-400 mt-2 text-sm sm:text-base">
+            Punkte, Platzierung und nächstes Spiel.
           </p>
         </div>
 
         <button
           onClick={logout}
-          className="bg-red-600 px-3 py-2 rounded-lg"
+          className="w-full sm:w-fit rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/20 transition"
         >
           Logout
         </button>
       </div>
 
-      {/* CARDS */}
-      <div className="grid grid-cols-2 gap-4">
-
-        <div className="bg-slate-900 p-5 rounded-xl">
-          <p className="text-slate-400">Punkte</p>
-          <h2 className="text-3xl font-bold">{points}</h2>
+      {/* POINTS + RANK */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5 shadow-xl">
+          <p className="text-xs sm:text-sm text-slate-400">Punkte</p>
+          <h2 className="mt-2 text-4xl sm:text-5xl font-black">
+            {points}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">gesamt</p>
         </div>
 
-        <div className="bg-slate-900 p-5 rounded-xl">
-          <p className="text-slate-400">Platzierung</p>
-          <h2 className="text-3xl font-bold">{rank ?? "-"}</h2>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5 shadow-xl">
+          <p className="text-xs sm:text-sm text-slate-400">Platzierung</p>
+          <h2 className="mt-2 text-4xl sm:text-5xl font-black">
+            {formatRank(rank)}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">im Ranking</p>
         </div>
       </div>
 
       {/* NEXT MATCH */}
-      <div className="bg-slate-900 p-6 rounded-xl space-y-4">
-
-        <p className="text-slate-400">Nächstes Spiel</p>
+      <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl">
+        <div className="border-b border-slate-800 p-4 sm:p-5">
+          <p className="text-sm text-slate-400">Nächstes Spiel</p>
+        </div>
 
         {nextMatch ? (
-          <>
-            {/* TEAMS + FLAGS */}
-            <div className="flex items-center gap-4">
+          <div className="p-4 sm:p-8 space-y-6">
 
-              <img
-                src={nextMatch.homeTeam.crest}
-                className="w-10 h-10"
-              />
+            {/* MOBILE MATCH LAYOUT */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-6">
+              <div className="flex flex-col items-center text-center gap-2 min-w-0">
+                {nextMatch.homeTeam?.crest && (
+                  <img
+                    src={nextMatch.homeTeam.crest}
+                    alt=""
+                    className="h-12 w-12 sm:h-16 sm:w-16 object-contain"
+                  />
+                )}
 
-              <span className="text-xl font-bold">
-                {nextMatch.homeTeam.name}
-              </span>
+                <h2 className="text-sm sm:text-2xl font-black leading-tight break-words">
+                  {nextMatch.homeTeam?.name}
+                </h2>
+              </div>
 
-              <span className="text-slate-400">vs</span>
+              <div className="pt-5 sm:pt-7">
+                <div className="rounded-full border border-slate-700 bg-slate-950 px-3 py-2 text-xs sm:text-sm font-bold text-slate-300">
+                  VS
+                </div>
+              </div>
 
-              <span className="text-xl font-bold">
-                {nextMatch.awayTeam.name}
-              </span>
+              <div className="flex flex-col items-center text-center gap-2 min-w-0">
+                {nextMatch.awayTeam?.crest && (
+                  <img
+                    src={nextMatch.awayTeam.crest}
+                    alt=""
+                    className="h-12 w-12 sm:h-16 sm:w-16 object-contain"
+                  />
+                )}
 
-              <img
-                src={nextMatch.awayTeam.crest}
-                className="w-10 h-10"
-              />
+                <h2 className="text-sm sm:text-2xl font-black leading-tight break-words">
+                  {nextMatch.awayTeam?.name}
+                </h2>
+              </div>
             </div>
 
-            {/* CLEAN COUNTDOWN */}
-            <div className="text-3xl font-bold text-yellow-400">
-              ⏳ {countdown}
+            {/* COUNTDOWN */}
+            <div className="rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-4 sm:p-5 text-center">
+              <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-yellow-300/80">
+                Anstoß in
+              </p>
+
+              <div className="mt-2 text-3xl sm:text-5xl font-black text-yellow-300">
+                {countdown}
+              </div>
             </div>
-          </>
+          </div>
         ) : (
-          <p className="text-slate-400">Kein Spiel gefunden</p>
+          <div className="p-6 text-slate-400">
+            Kein Spiel gefunden
+          </div>
         )}
       </div>
     </div>
-  );
+  </div>
+);
 }

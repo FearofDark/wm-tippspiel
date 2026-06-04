@@ -5,22 +5,22 @@ import { supabase } from "@/lib/supabase";
 
 import GroupOverview from "@/components/matches/GroupOverview";
 import KnockoutView from "@/components/matches/KnockoutView";
+import AllPredictionsView from "@/components/matches/AllPredictionsView";
+import SpecialTipsView from "@/components/matches/SpecialTipsView";
 
 export default function MatchesPage() {
   const [loading, setLoading] = useState(true);
-
   const [tab, setTab] = useState("groups");
 
   const [matches, setMatches] = useState<any[]>([]);
   const [groupsData, setGroupsData] = useState<any[]>([]);
 
-  const [selectedGroup, setSelectedGroup] =
-    useState("GROUP_A");
+  const [allPredictions, setAllPredictions] = useState<any[]>([]);
+  const [specialPredictions, setSpecialPredictions] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
 
-  const [user, setUser] = useState<any>(null);
-
-  const [predictions, setPredictions] =
-    useState<Record<number, any>>({});
+  const [selectedGroup, setSelectedGroup] = useState("GROUP_A");
+  const [predictions, setPredictions] = useState<Record<number, any>>({});
 
   useEffect(() => {
     init();
@@ -34,57 +34,39 @@ export default function MatchesPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      console.log("🔐 USER:", user);
-
       if (!user) {
         window.location.href = "/login";
         return;
       }
 
-      setUser(user);
-
-      const [matchesRes, groupsRes] =
-        await Promise.all([
-          fetch("/api/matches"),
-          fetch("/api/groups"),
-        ]);
-
-      const matchesJson =
-        await matchesRes.json();
-
-      const groupsJson =
-        await groupsRes.json();
-
-      console.log(
-        "⚽ MATCHES:",
-        matchesJson.matches?.length
-      );
-
-      console.log(
-        "📊 GROUPS:",
-        groupsJson.standings?.length
-      );
-
-      setMatches(matchesJson.matches || []);
-      setGroupsData(
-        groupsJson.standings || []
-      );
-
-      const { data, error } =
-        await supabase
+      const [
+        matchesRes,
+        groupsRes,
+        myPredsRes,
+        allPredsRes,
+        specialPredsRes,
+        profilesRes,
+      ] = await Promise.all([
+        fetch("/api/matches"),
+        fetch("/api/groups"),
+        supabase.from("predictions").select("*").eq("user_id", user.id),
+        supabase
           .from("predictions")
           .select("*")
-          .eq("user_id", user.id);
+          .order("created_at", { ascending: false }),
+        supabase.from("special_predictions").select("*"),
+        supabase.from("profiles").select("id, username, points"),
+      ]);
 
-      console.log("📊 PREDICTIONS:", data);
-      console.log("❌ ERROR:", error);
+      const matchesJson = await matchesRes.json();
+      const groupsJson = await groupsRes.json();
 
-      const formatted: Record<
-        number,
-        any
-      > = {};
+      setMatches(matchesJson.matches || []);
+      setGroupsData(groupsJson.standings || []);
 
-      (data || []).forEach((p: any) => {
+      const formatted: Record<number, any> = {};
+
+      (myPredsRes.data || []).forEach((p: any) => {
         formatted[p.match_id] = {
           home: String(p.pred_home),
           away: String(p.pred_away),
@@ -92,11 +74,11 @@ export default function MatchesPage() {
       });
 
       setPredictions(formatted);
+      setAllPredictions(allPredsRes.data || []);
+      setSpecialPredictions(specialPredsRes.data || []);
+      setProfiles(profilesRes.data || []);
     } catch (err) {
-      console.error(
-        "❌ INIT ERROR:",
-        err
-      );
+      console.error("❌ INIT ERROR:", err);
     } finally {
       setLoading(false);
     }
@@ -110,33 +92,21 @@ export default function MatchesPage() {
     setPredictions((prev) => ({
       ...prev,
       [matchId]: {
-        home:
-          prev[matchId]?.home || "",
-        away:
-          prev[matchId]?.away || "",
+        home: prev[matchId]?.home || "",
+        away: prev[matchId]?.away || "",
         [side]: value,
       },
     }));
   }
 
-  const groups = groupsData.map(
-    (g: any) => ({
-      label: g.group,
-      value: g.group.replace(
-        "Group ",
-        "GROUP_"
-      ),
-    })
-  );
+  const groups = groupsData.map((g: any) => ({
+    label: g.group,
+    value: g.group.replace("Group ", "GROUP_"),
+  }));
 
-  const currentGroup =
-    groupsData.find(
-      (g: any) =>
-        g.group.replace(
-          "Group ",
-          "GROUP_"
-        ) === selectedGroup
-    );
+  const currentGroup = groupsData.find(
+    (g: any) => g.group.replace("Group ", "GROUP_") === selectedGroup
+  );
 
   if (loading) {
     return (
@@ -148,70 +118,75 @@ export default function MatchesPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-7xl mx-auto p-8">
-
+      <div className="max-w-7xl mx-auto p-4 sm:p-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-3xl sm:text-4xl font-bold">
             FIFA World Cup 2026
           </h1>
         </div>
 
-        <div className="flex gap-3 mb-8">
+        <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
           <button
-            onClick={() =>
-              setTab("groups")
-            }
-            className={`px-5 py-3 rounded-xl ${
-              tab === "groups"
-                ? "bg-emerald-600"
-                : "bg-slate-800"
+            onClick={() => setTab("groups")}
+            className={`shrink-0 px-5 py-3 rounded-xl ${
+              tab === "groups" ? "bg-emerald-600" : "bg-slate-800"
             }`}
           >
             Gruppenphase
           </button>
 
           <button
-            onClick={() =>
-              setTab("ko")
-            }
-            className={`px-5 py-3 rounded-xl ${
-              tab === "ko"
-                ? "bg-emerald-600"
-                : "bg-slate-800"
+            onClick={() => setTab("ko")}
+            className={`shrink-0 px-5 py-3 rounded-xl ${
+              tab === "ko" ? "bg-emerald-600" : "bg-slate-800"
             }`}
           >
             KO Phase
+          </button>
+
+          <button
+            onClick={() => setTab("tips")}
+            className={`shrink-0 px-5 py-3 rounded-xl ${
+              tab === "tips" ? "bg-emerald-600" : "bg-slate-800"
+            }`}
+          >
+            Alle Tipps
+          </button>
+
+          <button
+            onClick={() => setTab("special")}
+            className={`shrink-0 px-5 py-3 rounded-xl ${
+              tab === "special" ? "bg-emerald-600" : "bg-slate-800"
+            }`}
+          >
+            Spezial Tipps
           </button>
         </div>
 
         {tab === "groups" && (
           <GroupOverview
             groups={groups}
-            currentGroup={
-              currentGroup
-            }
-            selectedGroup={
-              selectedGroup
-            }
-            setSelectedGroup={
-              setSelectedGroup
-            }
+            currentGroup={currentGroup}
+            selectedGroup={selectedGroup}
+            setSelectedGroup={setSelectedGroup}
             matches={matches}
-            predictions={
-              predictions
-            }
-            updatePrediction={
-              updatePrediction
-            }
+            predictions={predictions}
+            updatePrediction={updatePrediction}
           />
         )}
 
-        {tab === "ko" && (
-          <KnockoutView
+        {tab === "ko" && <KnockoutView matches={matches} />}
+
+        {tab === "tips" && (
+          <AllPredictionsView
+            predictions={allPredictions}
+            specialPredictions={specialPredictions}
             matches={matches}
+            profiles={profiles}
           />
         )}
 
+        {tab === "special" && <SpecialTipsView matches={matches} />}
       </div>
     </div>
   );
