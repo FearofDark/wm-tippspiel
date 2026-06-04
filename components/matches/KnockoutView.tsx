@@ -82,7 +82,21 @@ function Round({
   const [saved, setSaved] = useState<Record<number, boolean>>({});
   const saveTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
+  const isLocked = (match: any) => {
+    const matchDate = match.utc_date || match.utcDate;
+    if (!matchDate) return false;
+
+    return new Date(matchDate).getTime() <= Date.now();
+  };
+
   const savePrediction = async (matchId: number) => {
+    const match = matches.find((m) => Number(m.id) === Number(matchId));
+
+    if (match && isLocked(match)) {
+      console.log("❌ Tipp geschlossen");
+      return;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -126,6 +140,10 @@ function Round({
     side: "home" | "away",
     value: string
   ) => {
+    const match = matches.find((m) => Number(m.id) === Number(matchId));
+
+    if (match && isLocked(match)) return;
+
     const cleanValue = value.replace(/\D/g, "");
 
     updatePrediction(matchId, side, cleanValue);
@@ -164,8 +182,24 @@ function Round({
           const awayName =
             match.away_team || match.awayTeam?.name || "Team offen";
 
-          const hasStarted =
-            matchDate && new Date(matchDate).getTime() <= Date.now();
+          const homeCrest = match.home_crest || match.homeTeam?.crest;
+          const awayCrest = match.away_crest || match.awayTeam?.crest;
+
+          const locked = isLocked(match);
+
+          const inputClass = `
+            w-10
+            h-8
+            text-center
+            text-sm
+            border
+            rounded
+            ${
+              locked
+                ? "bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed opacity-60"
+                : "bg-slate-800 border-slate-700"
+            }
+          `;
 
           return (
             <div
@@ -179,30 +213,30 @@ function Round({
               </div>
 
               <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-2">
-                <div className="text-xs sm:text-sm font-bold text-center break-words">
-                  {homeName}
+                <div className="flex flex-col items-center gap-1 min-w-0">
+                  {homeCrest && (
+                    <img
+                      src={homeCrest}
+                      alt=""
+                      className="w-5 h-5 object-contain"
+                    />
+                  )}
+
+                  <div className="text-xs sm:text-sm font-bold text-center break-words">
+                    {homeName}
+                  </div>
                 </div>
 
                 <input
                   type="text"
                   inputMode="numeric"
-                  disabled={hasStarted}
+                  disabled={locked}
                   value={pred.home ?? ""}
                   onChange={(e) =>
                     handleChange(match.id, "home", e.target.value)
                   }
                   onBlur={() => savePrediction(match.id)}
-                  className="
-                    w-10
-                    h-8
-                    text-center
-                    text-sm
-                    bg-slate-800
-                    border
-                    border-slate-700
-                    rounded
-                    disabled:opacity-40
-                  "
+                  className={inputClass}
                 />
 
                 <span className="font-bold">:</span>
@@ -210,39 +244,39 @@ function Round({
                 <input
                   type="text"
                   inputMode="numeric"
-                  disabled={hasStarted}
+                  disabled={locked}
                   value={pred.away ?? ""}
                   onChange={(e) =>
                     handleChange(match.id, "away", e.target.value)
                   }
                   onBlur={() => savePrediction(match.id)}
-                  className="
-                    w-10
-                    h-8
-                    text-center
-                    text-sm
-                    bg-slate-800
-                    border
-                    border-slate-700
-                    rounded
-                    disabled:opacity-40
-                  "
+                  className={inputClass}
                 />
 
-                <div className="text-xs sm:text-sm font-bold text-center break-words">
-                  {awayName}
+                <div className="flex flex-col items-center gap-1 min-w-0">
+                  {awayCrest && (
+                    <img
+                      src={awayCrest}
+                      alt=""
+                      className="w-5 h-5 object-contain"
+                    />
+                  )}
+
+                  <div className="text-xs sm:text-sm font-bold text-center break-words">
+                    {awayName}
+                  </div>
                 </div>
               </div>
+
+              {locked && (
+                <div className="mt-2 text-center text-xs text-slate-500">
+                  Tipp geschlossen
+                </div>
+              )}
 
               {saved[match.id] && (
                 <div className="mt-2 text-center text-xs text-emerald-400">
                   ✓ gespeichert
-                </div>
-              )}
-
-              {hasStarted && (
-                <div className="mt-2 text-center text-xs text-slate-500">
-                  Tipp geschlossen
                 </div>
               )}
             </div>

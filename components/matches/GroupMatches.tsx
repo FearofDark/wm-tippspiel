@@ -30,7 +30,21 @@ export default function GroupMatches({
       match.group?.toUpperCase() === selectedGroup?.toUpperCase()
   );
 
+  const isLocked = (match: any) => {
+    const matchDate = match.utc_date || match.utcDate;
+    if (!matchDate) return false;
+
+    return new Date(matchDate).getTime() <= Date.now();
+  };
+
   const runSave = async (matchId: number) => {
+    const match = matches.find((m) => Number(m.id) === Number(matchId));
+
+    if (match && isLocked(match)) {
+      console.log("❌ Tipp geschlossen");
+      return;
+    }
+
     const pred = predictions?.[matchId];
 
     if (!pred) return;
@@ -60,6 +74,10 @@ export default function GroupMatches({
     side: "home" | "away",
     value: string
   ) => {
+    const match = matches.find((m) => Number(m.id) === Number(matchId));
+
+    if (match && isLocked(match)) return;
+
     const cleanValue = value.replace(/\D/g, "");
 
     updatePrediction(matchId, side, cleanValue);
@@ -94,6 +112,16 @@ export default function GroupMatches({
         const awayName = match.away_team || match.awayTeam?.name || "Offen";
         const homeCrest = match.home_crest || match.homeTeam?.crest;
         const awayCrest = match.away_crest || match.awayTeam?.crest;
+        const locked = isLocked(match);
+
+        const inputClass = `
+          w-10 h-8 text-center text-sm border rounded
+          ${
+            locked
+              ? "bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed opacity-60"
+              : "bg-slate-800 border-slate-700"
+          }
+        `;
 
         return (
           <div
@@ -124,12 +152,13 @@ export default function GroupMatches({
               <input
                 type="text"
                 inputMode="numeric"
+                disabled={locked}
                 value={pred.home ?? ""}
                 onChange={(e) =>
                   handleChange(match.id, "home", e.target.value)
                 }
                 onBlur={() => runSave(match.id)}
-                className="w-10 h-8 text-center text-sm bg-slate-800 border border-slate-700 rounded"
+                className={inputClass}
               />
 
               <span className="font-bold">:</span>
@@ -137,12 +166,13 @@ export default function GroupMatches({
               <input
                 type="text"
                 inputMode="numeric"
+                disabled={locked}
                 value={pred.away ?? ""}
                 onChange={(e) =>
                   handleChange(match.id, "away", e.target.value)
                 }
                 onBlur={() => runSave(match.id)}
-                className="w-10 h-8 text-center text-sm bg-slate-800 border border-slate-700 rounded"
+                className={inputClass}
               />
 
               <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 min-w-0">
@@ -159,6 +189,12 @@ export default function GroupMatches({
                 )}
               </div>
             </div>
+
+            {locked && (
+              <div className="mt-2 text-center text-xs text-slate-500">
+                Tipp geschlossen
+              </div>
+            )}
 
             {saved[match.id] && (
               <div className="mt-1 text-center text-xs text-emerald-400">
