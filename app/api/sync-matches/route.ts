@@ -59,6 +59,8 @@ export async function GET() {
       stage: match.stage ?? null,
       home_team: match.homeTeam?.name ?? null,
       away_team: match.awayTeam?.name ?? null,
+      home_crest: match.homeTeam?.crest ?? null,
+away_crest: match.awayTeam?.crest ?? null,
       home_score: match.score?.fullTime?.home ?? null,
       away_score: match.score?.fullTime?.away ?? null,
       status: match.status ?? null,

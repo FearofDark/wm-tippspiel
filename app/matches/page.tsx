@@ -47,7 +47,9 @@ export default function MatchesPage() {
         specialPredsRes,
         profilesRes,
       ] = await Promise.all([
-        fetch("/api/matches"),
+        supabase.from("matches").select("*").order("utc_date", {
+          ascending: true,
+        }),
         fetch("/api/groups"),
         supabase.from("predictions").select("*").eq("user_id", user.id),
         supabase
@@ -58,10 +60,13 @@ export default function MatchesPage() {
         supabase.from("profiles").select("id, username, points"),
       ]);
 
-      const matchesJson = await matchesRes.json();
       const groupsJson = await groupsRes.json();
 
-      setMatches(matchesJson.matches || []);
+      if (matchesRes.error) {
+        console.error("❌ MATCHES ERROR:", matchesRes.error);
+      }
+
+      setMatches(matchesRes.data || []);
       setGroupsData(groupsJson.standings || []);
 
       const formatted: Record<number, any> = {};
@@ -156,7 +161,7 @@ export default function MatchesPage() {
                 : "bg-slate-800 text-slate-300"
             }`}
           >
-            Tipps (alle)
+            Tipps
           </button>
 
           <button
@@ -186,10 +191,10 @@ export default function MatchesPage() {
 
           {tab === "ko" && (
             <KnockoutView
-  matches={matches}
-  predictions={predictions}
-  updatePrediction={updatePrediction}
-/>
+              matches={matches}
+              predictions={predictions}
+              updatePrediction={updatePrediction}
+            />
           )}
 
           {tab === "tips" && (
@@ -201,9 +206,7 @@ export default function MatchesPage() {
             />
           )}
 
-          {tab === "special" && (
-            <SpecialTipsView matches={matches} />
-          )}
+          {tab === "special" && <SpecialTipsView matches={matches} />}
         </div>
       </div>
     </div>

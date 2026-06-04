@@ -47,36 +47,75 @@ export default function AllPredictionsView({
     return Array.from(new Set(found));
   }, [matches]);
 
+  const worldCupStart = useMemo(() => {
+    const dates = matches
+      .map((m) => m.utc_date || m.utcDate)
+      .filter(Boolean)
+      .map((d) => new Date(d).getTime())
+      .filter((t) => !Number.isNaN(t));
+
+    if (!dates.length) return null;
+
+    return Math.min(...dates);
+  }, [matches]);
+
+const firstMatch = matches.find(
+  (m) =>
+    (m.home_team === "Mexico" ||
+      m.homeTeam?.name === "Mexico") &&
+    (m.away_team === "South Africa" ||
+      m.awayTeam?.name === "South Africa")
+);
+
+const firstMatchDate = firstMatch
+  ? new Date(
+      firstMatch.utc_date || firstMatch.utcDate
+    ).getTime()
+  : null;
+
+const specialRevealed =
+  firstMatchDate !== null &&
+  Date.now() >= firstMatchDate;
+
   useEffect(() => {
     if (stages.length > 0 && !stages.includes(selectedStage)) {
       setSelectedStage(stages[0]);
     }
   }, [stages, selectedStage]);
 
-  const filteredPredictions = predictions.filter(
-    (p) => p.user_id === selectedUser
-  );
-
   const selectedSpecial = specialPredictions.find(
     (s) => s.user_id === selectedUser
   );
 
-  const getMatch = (matchId: number) =>
-    matches.find((m) => Number(m.id) === Number(matchId));
-
   const selectedProfile = profiles.find((p) => p.id === selectedUser);
 
-  const visiblePredictions = filteredPredictions.filter((prediction) => {
-    const match = getMatch(prediction.match_id);
+  const isMatchRevealed = (match: any) => {
+    const matchDate = match?.utc_date || match?.utcDate;
+    if (!matchDate) return false;
 
-    if (!match) return false;
+    return new Date(matchDate).getTime() <= Date.now();
+  };
 
-    if (section === "groups") {
-      return match.group === selectedGroup;
-    }
+  const getPredictionForMatch = (matchId: number) =>
+    predictions.find(
+      (p) =>
+        p.user_id === selectedUser &&
+        Number(p.match_id) === Number(matchId)
+    );
 
-    return match.stage === selectedStage;
-  });
+  const visibleMatches = matches
+    .filter((match) => {
+      if (section === "groups") {
+        return match.group === selectedGroup;
+      }
+
+      return match.stage === selectedStage;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.utc_date || a.utcDate || 0).getTime();
+      const dateB = new Date(b.utc_date || b.utcDate || 0).getTime();
+      return dateA - dateB;
+    });
 
   const stageLabel = (stage: string) => {
     switch (stage) {
@@ -121,7 +160,14 @@ export default function AllPredictionsView({
           </h3>
         </div>
 
-        {selectedSpecial ? (
+        {!specialRevealed ? (
+          <div className="rounded-xl bg-slate-800 p-4">
+            <p className="text-lg font-black text-slate-500">🔒 Versteckt</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Spezial Tipps werden erst mit Beginn der WM sichtbar.
+            </p>
+          </div>
+        ) : selectedSpecial ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="rounded-xl bg-slate-800 p-4">
               <p className="text-xs text-slate-400">Weltmeister</p>
@@ -219,13 +265,13 @@ export default function AllPredictionsView({
       )}
 
       <div className="space-y-3">
-        {visiblePredictions.length === 0 ? (
+        {visibleMatches.length === 0 ? (
           <div className="text-slate-400 text-sm">
-            Keine Tipps für diese Auswahl gefunden.
+            Keine Spiele für diese Auswahl gefunden.
           </div>
         ) : (
-          visiblePredictions.map((prediction) => {
-            const match = getMatch(prediction.match_id);
+          visibleMatches.map((match) => {
+            const prediction = getPredictionForMatch(match.id);
 
             const homeName =
               match?.home_team || match?.homeTeam?.name || "Team offen";
@@ -234,10 +280,11 @@ export default function AllPredictionsView({
               match?.away_team || match?.awayTeam?.name || "Team offen";
 
             const matchDate = match?.utc_date || match?.utcDate;
+            const revealed = isMatchRevealed(match);
 
             return (
               <div
-                key={prediction.id}
+                key={match.id}
                 className="bg-slate-900 border border-slate-800 rounded-xl p-4"
               >
                 <div className="flex items-center justify-between gap-4">
@@ -257,9 +304,29 @@ export default function AllPredictionsView({
                     </p>
                   </div>
 
-                  <div className="text-2xl font-black text-yellow-300">
-                    {prediction.pred_home}:{prediction.pred_away}
-                  </div>
+                  {revealed ? (
+                    prediction ? (
+                      <div className="text-2xl font-black text-yellow-300">
+                        {prediction.pred_home}:{prediction.pred_away}
+                      </div>
+                    ) : (
+                      <div className="text-right">
+                        <div className="text-lg font-black text-slate-500">
+                          -
+                        </div>
+                        <p className="text-[10px] text-slate-500">
+                          Kein Tipp
+                        </p>
+                      </div>
+                    )
+                  ) : (
+                    <div className="rounded-xl bg-slate-800 px-4 py-3 text-right">
+                      <p className="text-lg font-black text-slate-500">🔒</p>
+                      <p className="text-[10px] text-slate-400">
+                        Sichtbar ab Anpfiff
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
