@@ -24,13 +24,9 @@ export default function Home() {
       <div className="text-center">
 
         <h1 className="text-5xl md:text-7xl font-bold mb-4">
-          ⚽ WM 2026 Tippspiel
+         WM 2026 Tippspiel
         </h1>
 
-        <p className="text-slate-400 mb-8">
-          Tippe alle Spiele der FIFA World Cup 2026
-          und messe dich mit deinen Freunden.
-        </p>
 
         <div className="flex gap-4 justify-center">
 
