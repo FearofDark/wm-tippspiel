@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 import GroupOverview from "@/components/matches/GroupOverview";
@@ -10,10 +9,8 @@ import AllPredictionsView from "@/components/matches/AllPredictionsView";
 import SpecialTipsView from "@/components/matches/SpecialTipsView";
 
 export default function MatchesPage() {
-  const searchParams = useSearchParams();
-
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(searchParams.get("tab") || "groups");
+  const [tab, setTab] = useState("groups");
 
   const [matches, setMatches] = useState<any[]>([]);
   const [groupsData, setGroupsData] = useState<any[]>([]);
@@ -26,14 +23,13 @@ export default function MatchesPage() {
   const [predictions, setPredictions] = useState<Record<number, any>>({});
 
   useEffect(() => {
-    const urlTab = searchParams.get("tab");
+    const params = new URLSearchParams(window.location.search);
+    const urlTab = params.get("tab");
 
     if (urlTab) {
       setTab(urlTab);
     }
-  }, [searchParams]);
 
-  useEffect(() => {
     init();
   }, []);
 
