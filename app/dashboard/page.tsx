@@ -50,14 +50,12 @@ export default function Dashboard() {
   const [countdown, setCountdown] = useState("");
   const [upcomingUntipped, setUpcomingUntipped] = useState<any[]>([]);
   const [totalOpenTips, setTotalOpenTips] = useState(0);
+  const [specialMissing, setSpecialMissing] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const date = getMatchDate(nextMatch);
-
-      if (date) {
-        setCountdown(getCountdown(date));
-      }
+      if (date) setCountdown(getCountdown(date));
     }, 60000);
 
     return () => clearInterval(interval);
@@ -89,30 +87,44 @@ export default function Dashboard() {
           .order("points", { ascending: false });
 
         if (allUsers) {
-          const position =
-            allUsers.findIndex((u) => u.id === user.id) + 1;
-
+          const position = allUsers.findIndex((u) => u.id === user.id) + 1;
           setRank(position > 0 ? position : null);
         }
 
-        const [{ data: matchesData, error: matchesError }, { data: predictionsData }] =
-          await Promise.all([
-            supabase
-              .from("matches")
-              .select("*")
-              .order("utc_date", { ascending: true }),
-            supabase
-              .from("predictions")
-              .select("match_id")
-              .eq("user_id", user.id),
-          ]);
+        const [
+          { data: matchesData, error: matchesError },
+          { data: predictionsData },
+          { data: specialData },
+        ] = await Promise.all([
+          supabase.from("matches").select("*").order("utc_date", {
+            ascending: true,
+          }),
+          supabase
+            .from("predictions")
+            .select("match_id")
+            .eq("user_id", user.id),
+          supabase
+            .from("special_predictions")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+        ]);
 
         if (matchesError) {
           console.error("MATCHES ERROR:", matchesError);
         }
 
+        const hasAllSpecialTips =
+          specialData?.world_champion &&
+          specialData?.top_scorer &&
+          specialData?.most_unfair_team &&
+          specialData?.fairest_team;
+
+        setSpecialMissing(!hasAllSpecialTips);
+
         const matches = matchesData || [];
         const predictions = predictionsData || [];
+
         const tippedMatchIds = new Set(
           predictions.map((prediction: any) => Number(prediction.match_id))
         );
@@ -160,6 +172,10 @@ export default function Dashboard() {
     window.location.href = "/login";
   };
 
+  const goToSpecialTips = () => {
+    window.location.href = "/matches?tab=special";
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
@@ -176,7 +192,6 @@ export default function Dashboard() {
             <div className="inline-flex items-center rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-300 mb-3">
               WM 2026 Tippspiel
             </div>
-
           </div>
 
           <button
@@ -212,31 +227,11 @@ export default function Dashboard() {
 
               <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl font-black text-orange-300">
-                  Du hast noch {totalOpenTips} offene Tipps !
+                  Du hast noch {totalOpenTips} offene Tipps!
                 </h2>
-
               </div>
             </div>
-            <div className="border-b border-slate-800 p-4 sm:p-5 space-y-3">
-  <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
-    <div className="flex items-start gap-3">
-      <div className="text-xl"></div>
-
-      <div>
-        <h3 className="text-sm sm:text-base font-black text-blue-300">
-          Info:
-        </h3>
-
-        <p className="text-xs sm:text-sm text-blue-100/80 mt-1 leading-relaxed">
-          Vergesst nicht eure Spezial Tipps auszufüllen. Diese werden am Anfang der WM gesperrt!
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
           </div>
-
-          
         ) : (
           <div className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-4 sm:p-5">
             <div className="flex items-start gap-3">
@@ -309,11 +304,33 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="p-6 text-slate-400">
-              Kein Spiel gefunden
-            </div>
+            <div className="p-6 text-slate-400">Kein Spiel gefunden</div>
           )}
         </div>
+
+                {specialMissing && (
+          <div className="rounded-3xl border border-blue-400/30 bg-blue-400/10 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-black text-blue-300">
+                  📢 Spezialtipps fehlen noch
+                </h3>
+
+                <p className="text-sm text-blue-100/80 mt-1">
+                  Fülle deine Spezialtipps aus. Sie werden mit Beginn der WM
+                  gesperrt.
+                </p>
+              </div>
+
+              <button
+                onClick={goToSpecialTips}
+                className="rounded-xl bg-blue-500 px-4 py-3 text-sm font-bold text-white hover:bg-blue-400 transition"
+              >
+                Zu Spezialtipps
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl">
           <div className="border-b border-slate-800 p-4 sm:p-5">
@@ -355,6 +372,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

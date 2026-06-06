@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 import GroupOverview from "@/components/matches/GroupOverview";
@@ -9,8 +10,10 @@ import AllPredictionsView from "@/components/matches/AllPredictionsView";
 import SpecialTipsView from "@/components/matches/SpecialTipsView";
 
 export default function MatchesPage() {
+  const searchParams = useSearchParams();
+
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("groups");
+  const [tab, setTab] = useState(searchParams.get("tab") || "groups");
 
   const [matches, setMatches] = useState<any[]>([]);
   const [groupsData, setGroupsData] = useState<any[]>([]);
@@ -21,6 +24,14 @@ export default function MatchesPage() {
 
   const [selectedGroup, setSelectedGroup] = useState("GROUP_A");
   const [predictions, setPredictions] = useState<Record<number, any>>({});
+
+  useEffect(() => {
+    const urlTab = searchParams.get("tab");
+
+    if (urlTab) {
+      setTab(urlTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     init();
@@ -124,9 +135,6 @@ export default function MatchesPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white pb-24 md:pb-0">
       <div className="max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-6">
-        <div className="mb-5 sm:mb-7">
-        </div>
-
         <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6">
           <button
             onClick={() => setTab("groups")}
@@ -161,7 +169,7 @@ export default function MatchesPage() {
             Spezial
           </button>
 
-                    <button
+          <button
             onClick={() => setTab("tips")}
             className={`rounded-2xl py-3 sm:py-4 text-xs sm:text-sm font-black transition-all ${
               tab === "tips"
@@ -169,10 +177,8 @@ export default function MatchesPage() {
                 : "bg-slate-800 text-slate-300"
             }`}
           >
-            Tipps(alle)
+            Tipps
           </button>
-
-          
         </div>
 
         <div className="text-sm sm:text-base">

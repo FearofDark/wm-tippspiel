@@ -180,7 +180,7 @@ export default function SpecialTipsView({ matches }: Props) {
 
       <div>
         <p className="text-sm text-slate-400 mb-2">
-          Unfairstes Team (20 Punkte)
+          Unfairstes Team (Gruppenphase -20 Punkte)
         </p>
         <select
           disabled={specialLocked}
@@ -199,7 +199,7 @@ export default function SpecialTipsView({ matches }: Props) {
 
       <div>
         <p className="text-sm text-slate-400 mb-2">
-          Fairstes Team (20 Punkte)
+          Fairstes Team (Gruppenphase - 20 Punkte)
         </p>
         <select
           disabled={specialLocked}
