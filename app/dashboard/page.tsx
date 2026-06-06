@@ -217,7 +217,26 @@ export default function Dashboard() {
 
               </div>
             </div>
+            <div className="border-b border-slate-800 p-4 sm:p-5 space-y-3">
+  <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
+    <div className="flex items-start gap-3">
+      <div className="text-xl"></div>
+
+      <div>
+        <h3 className="text-sm sm:text-base font-black text-blue-300">
+          Info:
+        </h3>
+
+        <p className="text-xs sm:text-sm text-blue-100/80 mt-1 leading-relaxed">
+          Vergesst nicht eure Spezial Tipps auszufüllen. Diese werden am Anfang der WM gesperrt!
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
           </div>
+
+          
         ) : (
           <div className="rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-4 sm:p-5">
             <div className="flex items-start gap-3">
