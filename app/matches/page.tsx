@@ -173,7 +173,7 @@ export default function MatchesPage() {
                 : "bg-slate-800 text-slate-300"
             }`}
           >
-            Tipps
+            Tipps (alle)
           </button>
         </div>
 
