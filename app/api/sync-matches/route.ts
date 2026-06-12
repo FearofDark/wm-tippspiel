@@ -3,10 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function normalizeText(value: string | null | undefined) {
-  return (value || "").trim().toLowerCase();
-}
-
 export async function GET() {
   try {
     const supabase = createClient(
@@ -60,54 +56,40 @@ export async function GET() {
       home_team: match.homeTeam?.name ?? null,
       away_team: match.awayTeam?.name ?? null,
       home_crest: match.homeTeam?.crest ?? null,
-away_crest: match.awayTeam?.crest ?? null,
+      away_crest: match.awayTeam?.crest ?? null,
       home_score: match.score?.fullTime?.home ?? null,
       away_score: match.score?.fullTime?.away ?? null,
       status: match.status ?? null,
     }));
 
     for (const match of formattedMatches) {
-  const { error: updateError } = await supabase
-    .from("matches")
-    .update(match)
-    .eq("id", match.id);
+      const { error } = await supabase.rpc("sync_match_row", {
+        p_id: match.id,
+        p_utc_date: match.utc_date,
+        p_home_team: match.home_team,
+        p_away_team: match.away_team,
+        p_home_score: match.home_score,
+        p_away_score: match.away_score,
+        p_status: match.status,
+        p_group: match.group,
+        p_stage: match.stage,
+        p_home_crest: match.home_crest,
+        p_away_crest: match.away_crest,
+      });
 
-  if (updateError) {
-    return Response.json(
-      {
-        success: false,
-        step: "update match",
-        matchId: match.id,
-        error: updateError.message,
-      },
-      { status: 200 }
-    );
-  }
-
-  const { data: existing } = await supabase
-    .from("matches")
-    .select("id")
-    .eq("id", match.id)
-    .maybeSingle();
-
-  if (!existing) {
-    const { error: insertError } = await supabase
-      .from("matches")
-      .insert(match);
-
-    if (insertError) {
-      return Response.json(
-        {
-          success: false,
-          step: "insert match",
-          matchId: match.id,
-          error: insertError.message,
-        },
-        { status: 200 }
-      );
+      if (error) {
+        return Response.json(
+          {
+            success: false,
+            step: "sync match rpc",
+            matchId: match.id,
+            error: error.message,
+          },
+          { status: 200 }
+        );
+      }
     }
-  }
-}
+
     const { data: dbMatches, error: matchesError } = await supabase
       .from("matches")
       .select("id, home_score, away_score, status");
@@ -218,7 +200,7 @@ away_crest: match.awayTeam?.crest ?? null,
         }
 
         points += Number(sp.manual_bonus_points ?? 0);
-        
+
         if (
           specialResult.most_unfair_team &&
           sp.most_unfair_team === specialResult.most_unfair_team
