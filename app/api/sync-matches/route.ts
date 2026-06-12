@@ -66,23 +66,48 @@ away_crest: match.awayTeam?.crest ?? null,
       status: match.status ?? null,
     }));
 
-    const { error: upsertError } = await supabase
-      .from("matches")
-      .upsert(formattedMatches, {
-        onConflict: "id",
-      });
+    for (const match of formattedMatches) {
+  const { error: updateError } = await supabase
+    .from("matches")
+    .update(match)
+    .eq("id", match.id);
 
-    if (upsertError) {
+  if (updateError) {
+    return Response.json(
+      {
+        success: false,
+        step: "update match",
+        matchId: match.id,
+        error: updateError.message,
+      },
+      { status: 200 }
+    );
+  }
+
+  const { data: existing } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("id", match.id)
+    .maybeSingle();
+
+  if (!existing) {
+    const { error: insertError } = await supabase
+      .from("matches")
+      .insert(match);
+
+    if (insertError) {
       return Response.json(
         {
           success: false,
-          step: "upsert matches",
-          error: upsertError.message,
+          step: "insert match",
+          matchId: match.id,
+          error: insertError.message,
         },
         { status: 200 }
       );
     }
-
+  }
+}
     const { data: dbMatches, error: matchesError } = await supabase
       .from("matches")
       .select("id, home_score, away_score, status");
